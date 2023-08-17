@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thing</title>
+    <style>
+        body {
+            margin: 0%;
+            overflow: hidden;
+        }
+    </style>
+    <script src="socket.io.min.js"></script>
+</head>
+<body>
+    <canvas id="c"></canvas>
+    <script>
+        var canvas = document.getElementById("c"),
+            ctx = canvas.getContext("2d")
+
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+
+        document.body.onload = ()=>{
+            const socket = io(location.href.split("?")[0])
+            window.socket = socket
+
+            socket.on("connect", (e)=>{
+                console.log("connected")
+                socket.on("updateGameState", (e)=>{
+                    console.log(e)
+                })
+            })
+
+
+        }
+    </script>
+</body>
+</html>
