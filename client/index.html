@@ -22,18 +22,37 @@
         canvas.height = window.innerHeight
 
         document.body.onload = ()=>{
-            const socket = io(location.href.split("?")[0])
+            const socket = io("http://10.11.0.106:4545/")
             window.socket = socket
 
             socket.on("connect", (e)=>{
                 console.log("connected")
-                socket.on("updateGameState", (e)=>{
-                    console.log(e)
+
+                socket.emit("join", "")
+                socket.on("joined", (e)=>{
+                    window.CLIENT_ID = e.sid
+                    window.MOBILE_ID = e.mobId
+
+
+                    setInterval(() => {
+                        socket.emit("requestState", "hi")
+                    }, 1000/20);
                 })
+                
+                
+            })
+            socket.on("returnState", (e)=>{
+                window.gameState = e
+                cameraPos = e.cameraPos
             })
 
 
+
+            requestAnimationFrame(renderLoop)
+
         }
     </script>
+
+    <script src="main.js"></script>
 </body>
 </html>

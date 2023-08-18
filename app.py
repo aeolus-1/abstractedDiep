@@ -1,43 +1,78 @@
+import asyncio
+from aiohttp import web
 import socketio
-import eventlet
-import time, threading, json
+import random, time, json
+import threading
 
 from game import Game
 
-port = 6969
-sio = socketio.AsyncServer(cors_allowed_origins='*')
-app = socketio.WSGIApp(sio, eventlet, static_files={
-    '/': {'content_type': 'text/html', 'filename': 'client/index.html'},
-    '/socket.io.min.js': {'content_type': 'text/html', 'filename': 'client/socket.io.min.js'},
-    
-})
+sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins='*',  async_handlers=True)
+app = web.Application()
+sio.attach(app)
+
 
 @sio.on('connect')
 def connect(sid, environ):
-    print(f'Connected: {sid}')
+    print("connected: ", sid)
+
+@sio.on('join')
+async def join(sid, environ):
+    newClient = {
+        "id":sid,
+        "mobile":mainGame.addClientPlayer(sid)
+    }
+    clients[sid] = newClient
+
+    print("Player has Joined")
+
+    await sio.emit("joined", {
+        "mobId":newClient["mobile"].id,
+        "sid":sid,
+    }, to=sid)
+
 
 @sio.on('requestState')
-def connect(sid, environ):
-    sio.emit("updateGameState", json.dumps(mainGame.getStateForClients()), )
-    print(f'Connected: {sid}')
+async def message(sid, data):
+    clientOb = clients.get(sid)
+    if (clientOb):
+        await sio.emit("returnState", mainGame.getStateForClients(sid), to=sid)
+    else:
+        pass#print("Non-joined player requesting")
+    # await asyncio.sleep(1 * random.random())
+    # print('waited', data)
 
-    #
+@sio.on('disconnect')
+def disconnect(sid):
+    print('disconnect ', sid)
 
 
-def run():
-    eventlet.wsgi.server(eventlet.listen(('', port)), app) # Note this line
+
+@sio.on('submitKeys')
+def submitKeys(sid, data):
+    mainGame.fetchMobile(data["mobId"]).keys = data["keys"]
+    if (data["keys"].get("rotation")):
+        mainGame.fetchMobile(data["mobId"]).rotation = data["keys"]["rotation"]
+
+
+clients = {}
+
 
 mainGame = Game()
+mainGame.clients = clients
 
 def updateClientsGameState():
+    preTime = time.time()
     while True:
+        tps = 1000/(((time.time()-preTime)*1000)+0.001)
+        #print(tps)
+        preTime = time.time()
         #print("emitting", time.time())
-        #Game.updateState()
-        time.sleep(1/10)
+        mainGame.updateState(1/tps)
+        time.sleep(1/30)
 
 stateUpdater = threading.Thread(target=updateClientsGameState, args=())
 stateUpdater.start()
 
-run()
 
-
+if __name__ == '__main__':
+    web.run_app(app, host='0.0.0.0', port=4545)
