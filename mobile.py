@@ -7,6 +7,8 @@ class Mobile:
         self.player = False
         self.bot = False
 
+        self.health = 1
+
         self.id = str(random.random())
 
         self.pos = options["pos"]
@@ -16,6 +18,9 @@ class Mobile:
         self.radius = options["radius"]
 
         self.build = options["build"]
+        self.build["maxHealth"] *= 0.1
+
+        self.team = options["team"]
 
         self.rotation = 0
 

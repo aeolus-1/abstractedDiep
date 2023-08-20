@@ -252,7 +252,7 @@
         "health": 130,
         "speed": 0.9,
         "size": 15,
-        "maxHealth": 100,
+        "maxHealth": 1000,
         "bodyDamage": 0.5,
         "duration": null,
         "friction": 0.99,

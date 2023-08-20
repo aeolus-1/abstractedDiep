@@ -22,7 +22,7 @@
         canvas.height = window.innerHeight
 
         document.body.onload = ()=>{
-            const socket = io("http://10.11.0.106:4545/")
+            const socket = io("http://127.0.0.1:4545/")
             window.socket = socket
 
             socket.on("connect", (e)=>{
@@ -43,7 +43,10 @@
             })
             socket.on("returnState", (e)=>{
                 window.gameState = e
-                cameraPos = e.cameraPos
+                cameraPos = [
+                    cameraPos[0] + (e.cameraPos[0]-cameraPos[0])*0.1,
+                    cameraPos[1] + (e.cameraPos[1]-cameraPos[1])*0.1,
+                ]
             })
 
 

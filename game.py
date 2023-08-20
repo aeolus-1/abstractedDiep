@@ -19,7 +19,9 @@ class Game:
         botMob = self.addMobile({
             "pos":[-1,0],
             "radius":0.25,
-            "build":self.BUILDS["starter"]
+            "build":self.BUILDS["starter"],
+
+            "team":"#f00",
         })
 
         botMob.bot = True
@@ -59,7 +61,7 @@ class Game:
 
     def addPlayer(self, build):
         build = copy.deepcopy(self.BUILDS[build])
-        newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build})
+        newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build,"team":"#0f0"})
         
         self.gameState["mobiles"].append(newMob)
         self.gameState["players"].append(newMob)
@@ -72,6 +74,13 @@ class Game:
 
         return mob
 
+    def killMobile(self, mob):
+        if (mob.player):
+            mob.pos = [10,0]
+            mob.health = 1
+        else:
+            mob.duration = 0
+            
 
     def updatePlayerCollisions(self,delta):
         for mobile1 in self.gameState["mobiles"]:
@@ -85,12 +94,30 @@ class Game:
                         strength = math.pow((max(-(dst-totalRad),0)*10)+1,2)*magnitude
                         
                         #print(angle)
+
+                        damaging = mobile1.team != mobile2.team
                         
                         mobile1.vel[0] += math.cos(angle)*strength*delta * (mobile2.radius/mobile1.radius)
                         mobile1.vel[1] += math.sin(angle)*strength*delta * (mobile2.radius/mobile1.radius)
+
+                        damage = mobile2.build["bodyDamage"]*(50/3.5) if damaging else 0
+                        mobile1.health = ((mobile1.health*mobile1.build["maxHealth"]
+                        )-(damage*delta)
+                        )/mobile1.build["maxHealth"]
+
                         
                         mobile2.vel[0] -= math.cos(angle)*strength*delta * (mobile1.radius/mobile2.radius)
                         mobile2.vel[1] -= math.sin(angle)*strength*delta * (mobile1.radius/mobile2.radius)
+
+                        damage = mobile1.build["bodyDamage"]*(50/3.5) if damaging else 0
+                        mobile2.health = ((mobile2.health*mobile2.build["maxHealth"]
+                        )-(damage*delta)
+                        )/mobile2.build["maxHealth"]
+
+                        if (mobile1.health<=0):
+                            self.killMobile(mobile1)
+                        if (mobile2.health<=0):
+                            self.killMobile(mobile2)
 
 
 
@@ -126,7 +153,6 @@ class Game:
             
 
     def updateState(self, delta):
-
         
 
         for mob in self.gameState["mobiles"]:
@@ -169,13 +195,15 @@ class Game:
                 bulletMob = self.addMobile({
                     "radius":bulletBuild["size"]*(0.2/15),
                     "pos":pos if pos else nPos,
-                    "build":bulletBuild
+                    "build":bulletBuild,
+
+                    "team":mob.team,
                 })
 
-                bulletSpeed = 3
+                bulletSpeed = bulletBuild["speed"]*(3/8)
                 bulletMob.vel = [
-                    math.cos(posAngle)*bulletSpeed,
-                    math.sin(posAngle)*bulletSpeed
+                    mob.vel[0]+(math.cos(posAngle)*bulletSpeed),
+                    mob.vel[1]+(math.sin(posAngle)*bulletSpeed)
                 ]
                 bulletMob.friction = 1
                 bulletMob.duration = bulletBuild["duration"]/100

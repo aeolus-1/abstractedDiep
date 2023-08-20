@@ -56,23 +56,26 @@ def runBot(self, bot):
         target = nearbyPlayers[0]
         
 
+        usedGun = bot.build["guns"]
+        if len(usedGun):
+            usedGun = usedGun[0]
 
-        deflectionPos = intercept(
-            {
-                "x":bot.pos[0],
-                "y":bot.pos[1],
-            },
-            {
-                "x":target.pos[0],
-                "y":target.pos[1],
-                "vx":target.vel[0],
-                "vy":target.vel[1],
-            },
-            -3
-        )
+            deflectionPos = intercept(
+                {
+                    "x":bot.pos[0],
+                    "y":bot.pos[1],
+                },
+                {
+                    "x":target.pos[0],
+                    "y":target.pos[1],
+                    "vx":target.vel[0]+bot.vel[0],
+                    "vy":target.vel[1]+bot.vel[1],
+                },
+                usedGun["bullet"]["build"]["speed"]*(3/8)
+            )
 
-        angleToNearby = math.atan2(bot.pos[1]-deflectionPos["y"],bot.pos[0]-deflectionPos["x"])+math.pi
-        bot.rotation = angleToNearby
+            angleToNearby = math.atan2(bot.pos[1]-deflectionPos["y"],bot.pos[0]-deflectionPos["x"])+math.pi
+            bot.rotation = angleToNearby
 
 
         self.shoot(bot)
