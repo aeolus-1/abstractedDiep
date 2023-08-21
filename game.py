@@ -1,4 +1,5 @@
 from mobile import Mobile
+from chunks import Chunks
 from bot import runBot
 import math, json, random, copy
 
@@ -15,16 +16,19 @@ class Game:
         }
         self.BUILDS = json.load(open('builds.json'))
 
-
-        botMob = self.addMobile({
-            "pos":[-1,0],
-            "radius":0.25,
-            "build":self.BUILDS["starter"],
-
-            "team":"#f00",
+        self.chunks = Chunks({
+            "chunkSize":[3,3],
         })
 
-        botMob.bot = True
+        if True:
+            botMob = self.addMobile({
+                "pos":[-1,0],
+                "radius":0.25,
+                "build":self.BUILDS["starter"],
+
+                "team":"#f00",
+            })
+            botMob.bot = True
 
 
     def fetchMobile(self, id):
@@ -44,7 +48,9 @@ class Game:
             "cameraPos":[0,0]
         }
         state["cameraPos"] = self.clients[sid]["mobile"].pos
-        for mob in self.gameState["mobiles"]:
+        totMobiles = self.chunks.getAllMobiles()
+
+        for mob in totMobiles:
             if (mob.player):
                 state["players"].append(mob.__dict__)
             else:
@@ -55,6 +61,7 @@ class Game:
     def addMobile(self, options):
         newMob = Mobile(options)
         
+        self.chunks.evaluateMob(newMob)
         self.gameState["mobiles"].append(newMob)
 
         return newMob
@@ -63,6 +70,7 @@ class Game:
         build = copy.deepcopy(self.BUILDS[build])
         newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build,"team":"#0f0"})
         
+        self.chunks.evaluateMob(newMob)
         self.gameState["mobiles"].append(newMob)
         self.gameState["players"].append(newMob)
 
@@ -76,15 +84,27 @@ class Game:
 
     def killMobile(self, mob):
         if (mob.player):
-            mob.pos = [10,0]
+            self.setMobilePosition(mob, [
+                10,
+                0
+            ])
             mob.health = 1
         else:
             mob.duration = 0
+            self.chunks.evaluateMob(mob)
+            self.deleteMobile(mob)
+
+    def deleteMobile(self,mob):
+        self.gameState["mobiles"].remove(mob)
+        self.chunks.removeMob(mob.chunkPos, mob)
             
 
     def updatePlayerCollisions(self,delta):
         for mobile1 in self.gameState["mobiles"]:
-            for mobile2 in self.gameState["mobiles"]:
+            nearbyMobiles = Chunks.getMobilesInChunks(
+                self.chunks.getSurroundingChunks(mobile1.chunkPos)
+            )
+            for mobile2 in nearbyMobiles:
                 if (mobile1.id!=mobile2.id):
                     dst = math.sqrt(math.pow(mobile1.pos[0]-mobile2.pos[0],2)+math.pow(mobile1.pos[1]-mobile2.pos[1],2))
                     totalRad = (mobile1.build["size"]*(0.2/15))+(mobile2.build["size"]*(0.2/15))
@@ -151,6 +171,14 @@ class Game:
             player.vel[0] += moveV[0]*delta
             player.vel[1] += moveV[1]*delta
             
+    def setMobilePosition(self, mob, pos, add=False):
+        if add:
+            mob.pos[0] += pos[0]
+            mob.pos[1] += pos[1]
+        else:
+            mob.pos[0] = pos[0]
+            mob.pos[1] = pos[1]
+        self.chunks.evaluateMob(mob)
 
     def updateState(self, delta):
         
@@ -158,7 +186,7 @@ class Game:
         for mob in self.gameState["mobiles"]:
             mob.duration -= delta
             if (mob.duration<=0):
-                self.gameState["mobiles"].remove(mob)
+                self.deleteMobile(mob)
                 continue
 
             if (mob.bot):
@@ -169,8 +197,12 @@ class Game:
 
             
 
-            mob.pos[0] += mob.vel[0]*delta
-            mob.pos[1] += mob.vel[1]*delta
+            self.setMobilePosition(mob, [
+                mob.vel[0]*delta,
+                mob.vel[1]*delta,
+            ], add=True)
+            
+
 
             mob.vel[0] *= math.pow(mob.friction, delta)
             mob.vel[1] *= math.pow(mob.friction, delta)

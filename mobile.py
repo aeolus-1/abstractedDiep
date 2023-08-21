@@ -11,6 +11,8 @@ class Mobile:
 
         self.id = str(random.random())
 
+        self.chunkPos = False
+
         self.pos = options["pos"]
         self.vel = [0,0]
         self.friction = options["friction"] if self.options.get("friction") else 0.03

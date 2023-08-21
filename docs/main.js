@@ -181,7 +181,7 @@ function renderLoop() {
                 ctx.closePath()
             }
 
-            if (mob.player) {
+            if (mob.player || mob.bot) {
                 ctx.lineCap = "round"
 
                 ctx.strokeStyle = "#777"
