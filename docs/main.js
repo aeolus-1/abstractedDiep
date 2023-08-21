@@ -12,19 +12,29 @@ function renderLoop() {
             //console.log(player.keys.rotation)
         }
         
-
+        let scale = 100
 
         ctx.save()
 
-        ctx.clearRect(0,0,canvas.width,canvas.height)
+        ctx.fillStyle = "#bbb"
+        ctx.fillRect(0,0,canvas.width,canvas.height)
+
+        
         //ctx.translate(canvas.width/2,canvas.height/2)
 
         //ctx.translate(-canvas.width/2,-canvas.height/2)
-        let scale = 100
+        
         ctx.scale(scale,scale)
         
         ctx.translate(canvas.width*0.5*(1/scale),canvas.height*0.5*(1/scale))
         ctx.translate(-cameraPos[0],-cameraPos[1])
+
+        bounds = [
+            [-5,-5],
+            [15,15]
+        ]
+        ctx.fillStyle = "#fff"
+        ctx.fillRect(bounds[0][0],bounds[0][1],bounds[1][0],bounds[1][1])
 
         function drawGrid(size) {
             let grid = size,
@@ -67,9 +77,9 @@ function renderLoop() {
             }
         }
 
-        ctx.lineWidth = 0.5/scale
-        ctx.strokeStyle = "#555"
-        drawGrid(1)
+        ctx.lineWidth = 1/scale
+        ctx.strokeStyle = "#9995"
+        drawGrid(0.3)
 
 
 
@@ -81,7 +91,7 @@ function renderLoop() {
         for (let i = 0; i < totalMobiles.length; i++) {
             const mob = totalMobiles[i];
 
-            if (mob.friction>=1 && false){
+            if (mob.friction>=1 && true){
                 mob.pos[0] += mob.vel[0]*delta
                 mob.pos[1] += mob.vel[1]*delta
             }
@@ -103,6 +113,12 @@ function renderLoop() {
                 length = length*radius*2
 
                 ctx.save()
+
+                ctx.translate(startPos.x,startPos.y)
+                ctx.rotate(rotation*(Math.PI/180))
+                ctx.translate(-startPos.x,-startPos.y)
+
+
                 ctx.lineWidth = 3/scale
 
 
@@ -114,9 +130,9 @@ function renderLoop() {
                 ctx.lineTo(startPos.x+backStep,startPos.y+xReach)
 
                 let angleDiff = Math.atan2(xReach,backStep)
-                ctx.arc(startPos.x,startPos.y,radius,angleDiff,-angleDiff, true)
+                ctx.arc(startPos.x,startPos.y,radius,angleDiff,angleDiff, true)
 
-                ctx.fillStyle = "#fff"
+                ctx.fillStyle = "#9d9d9d"
                 ctx.fill()
 
                 
@@ -124,9 +140,7 @@ function renderLoop() {
                 ctx.closePath()
 
 
-                ctx.translate(startPos.x,startPos.y)
-                ctx.rotate(rotation*(Math.PI/180))
-                ctx.translate(-startPos.x,-startPos.y)
+               
 
                 ctx.beginPath()
                 
@@ -137,6 +151,7 @@ function renderLoop() {
 
                 ctx.lineTo(startPos.x+backStep,startPos.y+xReach)
 
+                ctx.strokeStyle = "#787878"
                 ctx.stroke()
 
                 ctx.closePath()
@@ -158,8 +173,8 @@ function renderLoop() {
 
             ctx.lineWidth = 3/scale
 
-            ctx.fillStyle = "#fff"
-            ctx.strokeStyle = "#000"
+            ctx.fillStyle = mob.team
+            ctx.strokeStyle = pSBC(-0.4, mob.team)
 
             ctx.fill()
             ctx.stroke()
@@ -181,7 +196,7 @@ function renderLoop() {
                 ctx.closePath()
             }
 
-            if (mob.player || mob.bot) {
+            if (!mob.bullet) {
                 ctx.lineCap = "round"
 
                 ctx.strokeStyle = "#777"

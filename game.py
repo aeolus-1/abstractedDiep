@@ -17,19 +17,43 @@ class Game:
         self.BUILDS = json.load(open('builds.json'))
 
         self.chunks = Chunks({
-            "chunkSize":[3,3],
+            "chunkSize":[0.5,0.5],
         })
 
         if True:
             botMob = self.addMobile({
-                "pos":[-1,0],
+                "pos":[-3,5],
                 "radius":0.25,
                 "build":self.BUILDS["starter"],
 
-                "team":"#f00",
+                "team":"#0f0",
             })
+            
             botMob.bot = True
+            #botMob.bot = True
+            for x in range(0):
+                botMob = self.addMobile({
+                    "pos":[5,random.random()],
+                    "radius":0.25,
+                    "build":self.BUILDS["healer"],
 
+                    "team":"#f00",
+                })
+                
+                botMob.bot = True
+
+    def runCommand(self, code):
+        eval(code)
+    def spawnRandomBot(self):
+        botMob = self.addMobile({
+            "pos":[(random.random()*20)-5,(random.random()*20)-5],
+            "radius":0.25,
+            "build":self.BUILDS[random.choice(list(self.BUILDS.keys()))],
+
+            "team":["#f00","#0f0","#00f","#f66"][random.randrange(0,3)],
+        })
+        
+        botMob.bot = True
 
     def fetchMobile(self, id):
         def filterC(a):
@@ -52,11 +76,16 @@ class Game:
 
         for mob in totMobiles:
             if (mob.player):
-                state["players"].append(mob.__dict__)
+                state["players"].append(Game.processMobDictForClient(copy.deepcopy(mob.__dict__)))
             else:
-                state["mobiles"].append(mob.__dict__)
+                state["mobiles"].append(Game.processMobDictForClient(copy.deepcopy(mob.__dict__)))
 
         return state
+
+    def processMobDictForClient(mobD):
+        if mobD.get("shotBy"):
+            del mobD["shotBy"]
+        return mobD
 
     def addMobile(self, options):
         newMob = Mobile(options)
@@ -68,7 +97,7 @@ class Game:
 
     def addPlayer(self, build):
         build = copy.deepcopy(self.BUILDS[build])
-        newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build,"team":"#0f0"})
+        newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build,"team":"#f00"})
         
         self.chunks.evaluateMob(newMob)
         self.gameState["mobiles"].append(newMob)
@@ -77,7 +106,7 @@ class Game:
         return newMob
 
     def addClientPlayer(self, clientId):
-        mob = self.addPlayer("starter")
+        mob = self.addPlayer("sniper")
         mob.clientId = clientId
 
         return mob
@@ -86,7 +115,7 @@ class Game:
         if (mob.player):
             self.setMobilePosition(mob, [
                 10,
-                0
+                0+random.random()
             ])
             mob.health = 1
         else:
@@ -95,7 +124,8 @@ class Game:
             self.deleteMobile(mob)
 
     def deleteMobile(self,mob):
-        self.gameState["mobiles"].remove(mob)
+        if mob in self.gameState["mobiles"]:
+            self.gameState["mobiles"].remove(mob)
         self.chunks.removeMob(mob.chunkPos, mob)
             
 
@@ -109,36 +139,44 @@ class Game:
                     dst = math.sqrt(math.pow(mobile1.pos[0]-mobile2.pos[0],2)+math.pow(mobile1.pos[1]-mobile2.pos[1],2))
                     totalRad = (mobile1.build["size"]*(0.2/15))+(mobile2.build["size"]*(0.2/15))
                     if (dst<totalRad):
-                        angle = math.atan2(mobile1.pos[1]-mobile2.pos[1],mobile1.pos[0]-mobile2.pos[0])
-                        magnitude = 1
-                        strength = math.pow((max(-(dst-totalRad),0)*10)+1,2)*magnitude
+                        
                         
                         #print(angle)
+                        def procColl(mobile1, mobile2, mod=0.5):
 
-                        damaging = mobile1.team != mobile2.team
-                        
-                        mobile1.vel[0] += math.cos(angle)*strength*delta * (mobile2.radius/mobile1.radius)
-                        mobile1.vel[1] += math.sin(angle)*strength*delta * (mobile2.radius/mobile1.radius)
+                            angle = math.atan2(mobile1.pos[1]-mobile2.pos[1],mobile1.pos[0]-mobile2.pos[0])
+                            magnitude = 5
+                            strength = math.pow((max(-(dst-totalRad),0)*10)+1,2)*magnitude
 
-                        damage = mobile2.build["bodyDamage"]*(50/3.5) if damaging else 0
-                        mobile1.health = ((mobile1.health*mobile1.build["maxHealth"]
-                        )-(damage*delta)
-                        )/mobile1.build["maxHealth"]
+                            isSelf =  (mobile1.shotBy==mobile2.shotBy or mobile1.id==mobile2.id)
+                            isSameTeam = mobile1.team == mobile2.team
+                            isHealingAttack = mobile2.build["bodyDamage"]<0 or mobile1.build["bodyDamage"]<0
 
-                        
-                        mobile2.vel[0] -= math.cos(angle)*strength*delta * (mobile1.radius/mobile2.radius)
-                        mobile2.vel[1] -= math.sin(angle)*strength*delta * (mobile1.radius/mobile2.radius)
+                            isBulletOnBullet = mobile1.bullet and mobile2.bullet
 
-                        damage = mobile1.build["bodyDamage"]*(50/3.5) if damaging else 0
-                        mobile2.health = ((mobile2.health*mobile2.build["maxHealth"]
-                        )-(damage*delta)
-                        )/mobile2.build["maxHealth"]
+                            
+                            
 
-                        if (mobile1.health<=0):
-                            self.killMobile(mobile1)
-                        if (mobile2.health<=0):
-                            self.killMobile(mobile2)
+                            damaging = (not isSelf) and ((isSameTeam) if (isHealingAttack and not isBulletOnBullet) else not isSameTeam)
+                            if damaging:
+                                damage = mobile2.build["bodyDamage"]*(50/3.5) if damaging else 0
+                                mobile1.health = max(min(((mobile1.health*mobile1.build["maxHealth"]
+                                )-(damage*delta*mod)
+                                )/mobile1.build["maxHealth"],1),0)
 
+
+                                if (mobile1.health<=0):
+                                    self.killMobile(mobile1)
+                                if (mobile2.health<=0):
+                                    self.killMobile(mobile2)
+
+                            if (False) if isBulletOnBullet else (not isSameTeam):
+
+                                mobile1.vel[0] += math.cos(angle)*strength*delta * (mobile2.radius/mobile1.radius)
+                                mobile1.vel[1] += math.sin(angle)*strength*delta * (mobile2.radius/mobile1.radius)
+
+                        procColl(mobile1,mobile2)
+                        procColl(mobile2,mobile1)
 
 
     def updatePlayerControls(self, delta):
@@ -178,6 +216,14 @@ class Game:
         else:
             mob.pos[0] = pos[0]
             mob.pos[1] = pos[1]
+
+        if (mob.player or mob.bot):
+            mob.pos[0] = max(min(mob.pos[0],10),-5)
+            if (mob.pos[0]>=10 or mob.pos[0]<=-5):
+                mob.vel[0] = 0
+            if (mob.pos[1]>=10 or mob.pos[1]<=-5):
+                mob.vel[1] = 0
+            mob.pos[1] = max(min(mob.pos[1],10),-5)
         self.chunks.evaluateMob(mob)
 
     def updateState(self, delta):
@@ -190,7 +236,9 @@ class Game:
                 continue
 
             if (mob.bot):
-                runBot(self, mob)
+                runBot(self, mob, delta)
+            if (mob.autoShoot):
+                self.shoot(mob)
 
             for gun in mob.build["guns"]:
                 gun["shootCooldown"] = max(gun["shootCooldown"]-delta,0)
@@ -214,7 +262,7 @@ class Game:
     def shoot(self, mob, pos=False):
         for gun in mob.build["guns"]:
             if (gun["shootCooldown"] <= 0):
-                gun["shootCooldown"] = gun["speed"]/1000
+                gun["shootCooldown"] = gun["speed"]
 
                 bulletBuild = gun["bullet"]["build"]
 
@@ -232,13 +280,33 @@ class Game:
                     "team":mob.team,
                 })
 
-                bulletSpeed = bulletBuild["speed"]*(3/8)
+                spreadRand = (random.randrange(-gun["spread"],gun["spread"]))*(math.pi/180)
+                shootAngle = posAngle+ spreadRand
+
+                bulletSpeed = bulletBuild["speed"]*(6/8)
                 bulletMob.vel = [
-                    mob.vel[0]+(math.cos(posAngle)*bulletSpeed),
-                    mob.vel[1]+(math.sin(posAngle)*bulletSpeed)
+                    mob.vel[0]+(math.cos(shootAngle)*bulletSpeed),
+                    mob.vel[1]+(math.sin(shootAngle)*bulletSpeed)
                 ]
+
+
+            
+                bulletMob.autoShoot = gun["bullet"].get("autoShoot")
+                bulletMob.rotation = shootAngle
                 bulletMob.friction = 1
                 bulletMob.duration = bulletBuild["duration"]/100
+
+                bulletMob.shotBy = mob.shotBy
+                bulletMob.bullet = True
+
+                recoilStrength = (gun["recoilMod"]*(30/50)) * math.pow(bulletBuild["size"]/15,2)
+                mob.vel = [
+                    mob.vel[0]-(math.cos(posAngle)*recoilStrength),
+                    mob.vel[1]-(math.sin(posAngle)*recoilStrength)
+                ]
                 
                 #print(bulletMob.options)
                 #print("shot")
+
+    def explode(self):
+        pass

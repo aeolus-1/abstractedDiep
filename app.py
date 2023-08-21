@@ -1,7 +1,7 @@
 import asyncio
 from aiohttp import web
 import socketio
-import random, time, json
+import random, time, json, base64
 import threading
 
 from game import Game
@@ -9,6 +9,8 @@ from game import Game
 sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins='*',  async_handlers=True)
 app = web.Application()
 sio.attach(app)
+
+adminCode = open('admincode.txt').read()
 
 
 @sio.on('connect')
@@ -44,6 +46,19 @@ async def message(sid, data):
 @sio.on('disconnect')
 def disconnect(sid):
     print('disconnect ', sid)
+
+@sio.on('runCommand')
+async def runCommand(sid, data):
+    realCode = data["passcode"]
+    print("recived code: ", realCode)
+    if (realCode==adminCode):
+        print("allowed Admin")
+        mainGame.runCommand(data["code"])
+    else:
+        print("WARNING WARNING HACKER HACKER - kicking")
+        print("code tried: ", data["code"])
+        await sio.disconnect(sid)
+
 
 
 

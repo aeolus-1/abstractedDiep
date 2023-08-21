@@ -24,7 +24,9 @@ class Chunks:
     def instertMob(self, chunkPos, mob):
         self.requestChunk(chunkPos).append(mob)
     def removeMob(self, chunkPos, mob):
-        self.requestChunk(chunkPos).remove(mob)
+        targetChunk = self.requestChunk(chunkPos)
+        if mob in targetChunk:
+            targetChunk.remove(mob)
 
     def evaluateMob(self, mob):
         if not mob.chunkPos:

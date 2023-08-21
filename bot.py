@@ -47,14 +47,55 @@ def quad(a, b, c):
 
 
 
-def runBot(self, bot):
+def runBot(self, bot, delta, movement=[0,0]):
+    
+    
+
+    def makeMove(pos, dir=1):
+        moveVM = 8 * bot.build["speed"] * dir
+        moveVA = math.atan2(pos[1]-bot.pos[1],pos[0]-bot.pos[0])
+        
+        moveV = [
+            math.cos(moveVA)*moveVM,
+            math.sin(moveVA)*moveVM
+        ]
+
+        bot.vel[0] += moveV[0]*delta
+        bot.vel[1] += moveV[1]*delta
+
+    def setLookAt(pos):
+        bot.rotation = math.atan2(pos[1]-bot.pos[1],pos[0]-bot.pos[0])
+
+
+    def findPlayers(a):
+        return (a.player or a.bot) and a.id!=bot.id
     def sortPlayers(a):
         return math.sqrt(math.pow(a.pos[0]-bot.pos[0],2)+math.pow(a.pos[1]-bot.pos[1],2))
-        
-    nearbyPlayers = list(sorted(self.gameState["players"],key=sortPlayers))
-    if len(nearbyPlayers)>0:
-        target = nearbyPlayers[0]
-        
+
+    totalPlayers = list(filter(findPlayers, self.gameState["mobiles"]))    
+    nearbyPlayers = list(sorted(totalPlayers,key=sortPlayers))
+
+    nearbyEnemies = []
+    nearbyFriendlies = []
+
+    for mob in nearbyPlayers:
+        if (mob.team==bot.team):
+            nearbyFriendlies.append(mob)
+        else:
+            nearbyEnemies.append(mob)
+
+    def runAttackEnemy():
+        target = nearbyEnemies[0]
+
+        dst = math.sqrt(math.pow(target.pos[0]-bot.pos[0],2)+math.pow(target.pos[1]-bot.pos[1],2))
+
+        if bot.health > 0.4:
+            if (dst>2):
+                makeMove(target.pos)
+        else:
+            if (dst<8):
+                makeMove(target.pos, -1)
+            
 
         usedGun = bot.build["guns"]
         if len(usedGun):
@@ -71,11 +112,71 @@ def runBot(self, bot):
                     "vx":target.vel[0]+bot.vel[0],
                     "vy":target.vel[1]+bot.vel[1],
                 },
-                usedGun["bullet"]["build"]["speed"]*(3/8)
+                usedGun["bullet"]["build"]["speed"]*(6/8)
             )
-
-            angleToNearby = math.atan2(bot.pos[1]-deflectionPos["y"],bot.pos[0]-deflectionPos["x"])+math.pi
-            bot.rotation = angleToNearby
+            
+            if deflectionPos==None:
+                return 0
+            setLookAt([deflectionPos["x"],deflectionPos["y"]])
+            
 
 
         self.shoot(bot)
+
+    def runHealFriend():
+        def findLowestHealth(a):
+            return a.health if a.health<0.9 else 1
+        
+        target = list(sorted(nearbyFriendlies,key=findLowestHealth))[0]
+
+        dst = math.sqrt(math.pow(target.pos[0]-bot.pos[0],2)+math.pow(target.pos[1]-bot.pos[1],2))
+
+        if target.health<0.9:
+
+            usedGun = bot.build["guns"][0]
+
+            deflectionPos = intercept(
+                {
+                    "x":bot.pos[0],
+                    "y":bot.pos[1],
+                },
+                {
+                    "x":target.pos[0],
+                    "y":target.pos[1],
+                    "vx":target.vel[0]+bot.vel[0],
+                    "vy":target.vel[1]+bot.vel[1],
+                },
+                usedGun["bullet"]["build"]["speed"]*(6/8)
+            )
+            
+            if deflectionPos==None:
+                return 0
+            setLookAt([deflectionPos["x"],deflectionPos["y"]])
+
+            if (dst>1.5):
+                makeMove(target.pos)
+            if (dst<2):
+                self.shoot(bot)
+
+            return False
+        else:
+            return True
+            
+        
+
+        
+    if bot.build["healer"]:
+        if len(nearbyFriendlies)>0:
+            if runHealFriend():
+                if len(nearbyEnemies)>0:
+                    runAttackEnemy()
+        elif len(nearbyEnemies)>0:
+            runAttackEnemy()
+        else:
+            pass
+    else:
+        if len(nearbyEnemies)>0:
+            runAttackEnemy()
+        
+    
+    

@@ -6,6 +6,11 @@ class Mobile:
 
         self.player = False
         self.bot = False
+        self.bullet = False
+
+        self.shotBy = self
+
+        self.autoShoot = False
 
         self.health = 1
 
@@ -20,7 +25,8 @@ class Mobile:
         self.radius = options["radius"]
 
         self.build = options["build"]
-        self.build["maxHealth"] *= 0.1
+        
+        self.build["maxHealth"] = max(self.build["maxHealth"]*0.5, 0.1)
 
         self.team = options["team"]
 
