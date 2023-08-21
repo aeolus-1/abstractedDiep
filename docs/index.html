@@ -22,7 +22,7 @@
         canvas.height = window.innerHeight
 
         document.body.onload = ()=>{
-            const socket = io("http://127.0.0.1:4545/")
+            const socket = io(location.protocol!="file:"?"http://10.11.0.106:4545/":"http://127.0.0.1:4545/")
             window.socket = socket
 
             socket.on("connect", (e)=>{
