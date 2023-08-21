@@ -5,10 +5,10 @@ Rather slow, I tried multithreading but I don't know what im doing
 
 Needs aiohttp and socktio installed  
   
-#To start  
+## To start  
 Run app.py
   
-#To play  
+## To play  
 Open docs/index.html to access client  
 Alternativly, run website.py for a locally hosted http client and goto [http://0.0.0.0:6969/](http://0.0.0.0:6969/)
   
