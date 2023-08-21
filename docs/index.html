@@ -12,6 +12,7 @@
     </style>
     <script src="socket.io.min.js"></script>
     <script>
+        var cameraPos=[0,0], cameraRange = 0
          var pSBC = (p, c0, c1, l) => {
             let r, g, b, P, f, t, h, i = parseInt,
                 m = Math.round,
@@ -62,6 +63,11 @@
         canvas.width = window.innerWidth
         canvas.height = window.innerHeight
 
+        window.onresize = ()=>{
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+        }
+        
         document.body.onload = ()=>{
             const socket = io(location.protocol!="file:"?"http://10.11.0.106:4545/":"http://127.0.0.1:4545/")
             window.socket = socket
@@ -76,7 +82,7 @@
 
 
                     setInterval(() => {
-                        socket.emit("requestState", "hi")
+                        socket.volatile.emit("requestState", "hi")
                     }, 1000/30);
                 })
                 
@@ -88,6 +94,7 @@
                     cameraPos[0] + (e.cameraPos[0]-cameraPos[0])*0.1,
                     cameraPos[1] + (e.cameraPos[1]-cameraPos[1])*0.1,
                 ]
+                cameraRange = e.sight
             })
 
 

@@ -11,6 +11,8 @@
         "guns": [
             {
                 "pos": 0,
+                "startDelay":0,
+                "offset":0,
                 "height": 17,
                 "width": 10,
                 "speed": 0.75,
@@ -22,6 +24,99 @@
                         "size": 8,
                         "maxHealth": 5,
                         "bodyDamage": 15,
+                        "duration": 300,
+                        "friction": 1,
+                        "sight": 0,
+                        "guns": []
+                    },
+                    "autoSpin": false,
+                    "autoShoot": false,
+                    "bot": false
+                },
+                "shootCooldown":0,
+                "onShootEffects": []
+            }
+        ],
+        "name": "starter"
+    },
+    "pellet": {
+        "speed": 0.85,
+        "size": 15,
+        "maxHealth": 100,
+        "bodyDamage": 2,
+        "duration": null,
+        "friction": 0.99,
+        "sight": 600,
+        "healer": false,
+        "guns": [
+            
+            {
+                "pos": 0,
+                "offset":0.2,
+                "height": 11,
+                "width": 6,
+                "speed": 0.3,
+                "startDelay":0.2,
+                "spread": 5,
+                "recoilMod": 1,
+                "bullet": {
+                    "build": {
+                        "speed": 8,
+                        "size": 2,
+                        "maxHealth": 2,
+                        "bodyDamage": 6,
+                        "duration": 300,
+                        "friction": 1,
+                        "sight": 0,
+                        "guns": []
+                    },
+                    "autoSpin": false,
+                    "autoShoot": false,
+                    "bot": false
+                },
+                "shootCooldown":0,
+                "onShootEffects": []
+            },{
+                "pos": 0,
+                "startDelay":0.2,
+                "offset":-0.2,
+                "height": 11,
+                "width": 6,
+                "speed": 0.2,
+                "spread": 5,
+                "recoilMod": 1,
+                "bullet": {
+                    "build": {
+                        "speed": 8,
+                        "size": 2,
+                        "maxHealth": 2,
+                        "bodyDamage": 6,
+                        "duration": 300,
+                        "friction": 1,
+                        "sight": 0,
+                        "guns": []
+                    },
+                    "autoSpin": false,
+                    "autoShoot": false,
+                    "bot": false
+                },
+                "shootCooldown":0,
+                "onShootEffects": []
+            },{
+                "pos": 0,
+                "offset":0,
+                "startDelay":0,
+                "height": 14,
+                "width": 6,
+                "speed": 0.2,
+                "spread": 5,
+                "recoilMod": 1,
+                "bullet": {
+                    "build": {
+                        "speed": 8,
+                        "size": 2,
+                        "maxHealth": 2,
+                        "bodyDamage": 6,
                         "duration": 300,
                         "friction": 1,
                         "sight": 0,
@@ -49,6 +144,8 @@
         "guns": [
             {
                 "pos": 0,
+                "startDelay":0,
+                "offset":0,
                 "height": 28,
                 "width": 8,
                 "speed": 1.7,
@@ -87,6 +184,8 @@
         "guns": [
             {
                 "pos": 0,
+                "offset":0,
+                "startDelay":0,
                 "height": 17,
                 "width": 20,
                 "speed": 1.8,
@@ -125,6 +224,8 @@
         "guns": [
             {
                 "pos": -20,
+                "startDelay":0,
+                "offset":0,
                 "height": 15,
                 "width": 8,
                 "speed": 0.6,
@@ -150,6 +251,8 @@
             },
             {
                 "pos": 20,
+                "startDelay":0,
+                "offset":0,
                 "height": 15,
                 "width": 8,
                 "speed": 0.6,
@@ -175,6 +278,8 @@
             },
             {
                 "pos": -10,
+                "startDelay":0,
+                "offset":0,
                 "height": 15,
                 "width": 8,
                 "speed": 0.6,
@@ -200,6 +305,8 @@
             },
             {
                 "pos": 10,
+                "startDelay":0,
+                "offset":0,
                 "height": 15,
                 "width": 8,
                 "speed": 0.6,
@@ -225,6 +332,8 @@
             },
             {
                 "pos": 0,
+                "startDelay":0,
+                "offset":0,
                 "height": 15,
                 "width": 8,
                 "speed": 0.6,
@@ -251,44 +360,7 @@
         ],
         "name": "starter"
     },
-    "//god": {
-        "speed": 3,
-        "size": 19,
-        "maxHealth": 10000000,
-        "bodyDamage": 10,
-        "duration": null,
-        "friction": 0.99,
-        "sight": 600,
-        "healer": false,
-        "guns": [
-            {
-                "pos": 0,
-                "height": 17,
-                "width": 10,
-                "speed": 0.75,
-                "spread": 3,
-                "recoilMod": 1,
-                "bullet": {
-                    "build": {
-                        "speed": 20,
-                        "size": 8,
-                        "maxHealth": 10,
-                        "bodyDamage": 15,
-                        "duration": 500,
-                        "friction": 1,
-                        "sight": 0,
-                        "guns": []
-                    },
-                    "autoSpin": false,
-                    "autoShoot": false,
-                    "bot": false
-                },
-                "shootCooldown":0,
-                "onShootEffects": []
-            }
-        ],
-        "name": "starter"
-    },
+    
     "healer": {
         "speed": 1.2,
         "size": 15,
@@ -301,6 +373,8 @@
         "guns": [
             {
                 "pos": 0,
+                "offset":0,
+                "startDelay":0,
                 "height": 12,
                 "ogLength": 0,
                 "width": 10,
@@ -332,6 +406,8 @@
             },
             {
                 "pos": 0,
+                "offset":0,
+                "startDelay":0,
                 "height": 15,
                 "ogLength": 0,
                 "width": 7,

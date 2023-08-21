@@ -69,9 +69,11 @@ class Game:
         state = {
             "mobiles":[],
             "players":[],
-            "cameraPos":[0,0]
+            "cameraPos":[0,0],
+            "sight":100,
         }
         state["cameraPos"] = self.clients[sid]["mobile"].pos
+        state["sight"] = self.clients[sid]["mobile"].build["sight"]
         totMobiles = self.chunks.getAllMobiles()
 
         for mob in totMobiles:
@@ -106,7 +108,7 @@ class Game:
         return newMob
 
     def addClientPlayer(self, clientId):
-        mob = self.addPlayer("sniper")
+        mob = self.addPlayer("pellet")
         mob.clientId = clientId
 
         return mob
@@ -183,7 +185,7 @@ class Game:
         for player in self.gameState["players"]:
 
             if player.keys.get("mouseDown"):
-                self.shoot(player)
+                self.shoot(player, delta)
 
 
             moveV = [0,0]
@@ -238,10 +240,10 @@ class Game:
             if (mob.bot):
                 runBot(self, mob, delta)
             if (mob.autoShoot):
-                self.shoot(mob)
+                self.shoot(mob, delta)
 
             for gun in mob.build["guns"]:
-                gun["shootCooldown"] = max(gun["shootCooldown"]-delta,0)
+                gun["shootCooldown"] = max(gun["shootCooldown"]-delta,-gun["startDelay"])
 
             
 
@@ -255,13 +257,14 @@ class Game:
             mob.vel[0] *= math.pow(mob.friction, delta)
             mob.vel[1] *= math.pow(mob.friction, delta)
 
-        self.updatePlayerControls(delta)
 
         self.updatePlayerCollisions(delta)
 
-    def shoot(self, mob, pos=False):
+    def shoot(self, mob, delta, pos=False):
         for gun in mob.build["guns"]:
             if (gun["shootCooldown"] <= 0):
+                gun["shootCooldown"] = min(gun["shootCooldown"]+delta*2,0)
+            if (gun["shootCooldown"] == 0):
                 gun["shootCooldown"] = gun["speed"]
 
                 bulletBuild = gun["bullet"]["build"]
@@ -271,6 +274,11 @@ class Game:
                 posLength = (0.85*(gun["height"]/17))*(mob.build["size"]*(0.2/17))*2
                 nPos[0] = mob.pos[0]+(math.cos(posAngle)*posLength)
                 nPos[1] = mob.pos[1]+(math.sin(posAngle)*posLength)
+
+                offset = gun["offset"]*(mob.build["size"]*(0.2/17))*2*2
+
+                nPos[0] += (math.cos(posAngle+(math.pi*0.5))*offset)
+                nPos[1] += (math.sin(posAngle+(math.pi*0.5))*offset)
                 
                 bulletMob = self.addMobile({
                     "radius":bulletBuild["size"]*(0.2/15),
@@ -281,7 +289,7 @@ class Game:
                 })
 
                 spreadRand = (random.randrange(-gun["spread"],gun["spread"]))*(math.pi/180)
-                shootAngle = posAngle+ spreadRand
+                shootAngle = posAngle#+ spreadRand
 
                 bulletSpeed = bulletBuild["speed"]*(6/8)
                 bulletMob.vel = [

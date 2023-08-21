@@ -50,12 +50,12 @@ def disconnect(sid):
 @sio.on('runCommand')
 async def runCommand(sid, data):
     realCode = data["passcode"]
-    print("recived code: ", realCode)
     if (realCode==adminCode):
         print("allowed Admin")
         mainGame.runCommand(data["code"])
     else:
         print("WARNING WARNING HACKER HACKER - kicking")
+        print("pass tried: ", data["passcode"])
         print("code tried: ", data["code"])
         await sio.disconnect(sid)
 
@@ -74,6 +74,7 @@ clients = {}
 
 mainGame = Game()
 mainGame.clients = clients
+#        self.updatePlayerControls(delta)
 
 def updateClientsGameState():
     preTime = time.time()
@@ -86,6 +87,19 @@ def updateClientsGameState():
         time.sleep(1/30)
 
 stateUpdater = threading.Thread(target=updateClientsGameState, args=())
+stateUpdater.start()
+
+def updatePlayerControls():
+    preTime = time.time()
+    while True:
+        tps = 1000/(((time.time()-preTime)*1000)+0.001)
+        #print(tps)
+        preTime = time.time()
+        #print("emitting", time.time())
+        mainGame.updatePlayerControls(1/tps)
+        time.sleep(1/30)
+
+stateUpdater = threading.Thread(target=updatePlayerControls, args=())
 stateUpdater.start()
 
 

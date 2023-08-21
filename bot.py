@@ -69,11 +69,14 @@ def runBot(self, bot, delta, movement=[0,0]):
 
     def findPlayers(a):
         return (a.player or a.bot) and a.id!=bot.id
+    def findVisiblePlayers(a):
+        return math.sqrt(math.pow(a.pos[0]-bot.pos[0],2)+math.pow(a.pos[1]-bot.pos[1],2)) < bot.build["sight"]*(10/600)
     def sortPlayers(a):
         return math.sqrt(math.pow(a.pos[0]-bot.pos[0],2)+math.pow(a.pos[1]-bot.pos[1],2))
 
     totalPlayers = list(filter(findPlayers, self.gameState["mobiles"]))    
-    nearbyPlayers = list(sorted(totalPlayers,key=sortPlayers))
+    visiblePlayers = list(filter(findVisiblePlayers, totalPlayers))    
+    nearbyPlayers = list(sorted(visiblePlayers,key=sortPlayers))
 
     nearbyEnemies = []
     nearbyFriendlies = []
@@ -121,7 +124,7 @@ def runBot(self, bot, delta, movement=[0,0]):
             
 
 
-        self.shoot(bot)
+        self.shoot(bot, delta)
 
     def runHealFriend():
         def findLowestHealth(a):
@@ -156,7 +159,7 @@ def runBot(self, bot, delta, movement=[0,0]):
             if (dst>1.5):
                 makeMove(target.pos)
             if (dst<2):
-                self.shoot(bot)
+                self.shoot(bot, delta)
 
             return False
         else:

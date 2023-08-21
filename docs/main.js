@@ -1,9 +1,13 @@
 var cameraPos = [0,0],
+    cameraRange = 0,
     deltaTime = (new Date()).getTime()
 
 function renderLoop() {
     const gs = window.gameState,
         delta = (((((new Date()).getTime()-deltaTime)))/1000)
+
+
+
         
     if (gs!=undefined&&socket.connected) {
 
@@ -12,7 +16,17 @@ function renderLoop() {
             //console.log(player.keys.rotation)
         }
         
-        let scale = 100
+        let scale = 1,
+
+            screenSize = {
+                x:canvas.width*0.5*(1/scale),
+                y:canvas.height*0.5*(1/scale),
+            },
+
+            wantedSize = cameraRange*(10/600),
+            realScale = 1/Math.min(wantedSize/screenSize.x,wantedSize/screenSize.y)
+
+        scale = realScale
 
         ctx.save()
 
@@ -90,122 +104,140 @@ function renderLoop() {
         totalMobiles = [...gs.mobiles,...gs.players]
         for (let i = 0; i < totalMobiles.length; i++) {
             const mob = totalMobiles[i];
+            let dst = Math.sqrt(Math.pow(mob.pos[0]-cameraPos[0],2)+Math.pow(mob.pos[1]-cameraPos[1],2))
+            if (dst < cameraRange*(10/600)) {
+                    
 
-            if (mob.friction>=1 && true){
-                mob.pos[0] += mob.vel[0]*delta
-                mob.pos[1] += mob.vel[1]*delta
-            }
-
-            ctx.save()
-
-            let startPos = {x:mob.pos[0],y:mob.pos[1]},
-                rotation = mob.rotation
-
-            ctx.translate(startPos.x,startPos.y)
-            ctx.rotate(rotation)
-            ctx.translate(-startPos.x,-startPos.y)
-
-
-            function renderBarrel(rotation, width, length) {
-                let radius = mob.build.size*(0.2/15),
-                    xReach = Math.min(width/4,radius),
-                    backStep = Math.sqrt(Math.pow(radius,2)-Math.pow(xReach,2))
-                length = length*radius*2
+                if (mob.friction>=1 && true){
+                    mob.pos[0] += mob.vel[0]*delta
+                    mob.pos[1] += mob.vel[1]*delta
+                }
 
                 ctx.save()
 
+                let startPos = {x:mob.pos[0],y:mob.pos[1]},
+                    rotation = mob.rotation
+
                 ctx.translate(startPos.x,startPos.y)
-                ctx.rotate(rotation*(Math.PI/180))
+                ctx.rotate(rotation)
                 ctx.translate(-startPos.x,-startPos.y)
 
 
-                ctx.lineWidth = 3/scale
+                function renderBarrel(rotation, offset, width, length) {
+                    let radius = mob.build.size*(0.2/15),
+                        xReach = Math.min(width/4,radius),
+                        backStep = Math.sqrt(Math.pow(radius,2)-Math.pow(xReach,2))
 
+                    offset = offset*radius*2
+                    length = length*radius*2
+
+                    ctx.save()
+
+                    ctx.translate(startPos.x,startPos.y)
+                    ctx.rotate(rotation*(Math.PI/180))
+                    ctx.translate(-startPos.x,-startPos.y)
+
+                    ctx.translate(0,offset)
+
+
+                    ctx.lineWidth = 3/100
+
+                    function mapXToCirle(y) {
+                        return Math.sqrt(Math.pow(radius,2)-Math.pow(y,2))
+                    }
+
+                    let leftBackStep = mapXToCirle(-xReach+offset),
+                        rightBackStep = mapXToCirle(xReach+offset)
+                    
+
+
+                    ctx.beginPath()
+
+                    ctx.moveTo(startPos.x+leftBackStep,startPos.y-xReach)
+                    ctx.lineTo(startPos.x+backStep+length,startPos.y-xReach)
+                    ctx.lineTo(startPos.x+backStep+length,startPos.y+xReach)
+                    ctx.lineTo(startPos.x+rightBackStep,startPos.y+xReach)
+
+                    let angleDiff = Math.atan2(xReach,backStep)
+                    //ctx.arc(startPos.x,startPos.y,radius,angleDiff,angleDiff, true)
+
+                    ctx.fillStyle = "#9d9d9d"
+                    ctx.fill()
+
+                    
+
+                    ctx.closePath()
+
+                    
+                    
+
+                
+
+                    ctx.beginPath()
+
+                    ctx.moveTo(startPos.x+leftBackStep,startPos.y-xReach)
+                    
+                    ctx.lineTo(startPos.x+backStep+length,startPos.y-xReach)
+                    ctx.lineTo(startPos.x+backStep+length,startPos.y+xReach)
+
+                    ctx.lineTo(startPos.x+rightBackStep,startPos.y+xReach)
+
+                    ctx.strokeStyle = "#787878"
+                    ctx.stroke()
+
+                    ctx.closePath()
+
+                    
+
+                    ctx.restore()
+                    
+
+                }
+                for (let i = 0; i < mob.build.guns.length; i++) {
+                    const gun = mob.build.guns[i];
+                    ctx.strokeStyle = "#000"
+                    renderBarrel(gun.pos, gun.offset, 0.4*(gun.width/10),0.85*(gun.height/17))
+                }
 
                 ctx.beginPath()
+                ctx.arc(mob.pos[0],mob.pos[1], mob.build.size*(0.2/15), 0, Math.PI*2)
 
-                ctx.moveTo(startPos.x+backStep,startPos.y-xReach)
-                ctx.lineTo(startPos.x+backStep+length,startPos.y-xReach)
-                ctx.lineTo(startPos.x+backStep+length,startPos.y+xReach)
-                ctx.lineTo(startPos.x+backStep,startPos.y+xReach)
+                ctx.lineWidth = 3/100
 
-                let angleDiff = Math.atan2(xReach,backStep)
-                ctx.arc(startPos.x,startPos.y,radius,angleDiff,angleDiff, true)
+                ctx.fillStyle = mob.team
+                ctx.strokeStyle = pSBC(-0.4, mob.team)
 
-                ctx.fillStyle = "#9d9d9d"
                 ctx.fill()
-
-                
-
-                ctx.closePath()
-
-
-               
-
-                ctx.beginPath()
-                
-                ctx.moveTo(startPos.x+backStep,startPos.y-xReach)
-                
-                ctx.lineTo(startPos.x+backStep+length,startPos.y-xReach)
-                ctx.lineTo(startPos.x+backStep+length,startPos.y+xReach)
-
-                ctx.lineTo(startPos.x+backStep,startPos.y+xReach)
-
-                ctx.strokeStyle = "#787878"
                 ctx.stroke()
-
                 ctx.closePath()
-
+                    
                 
-
                 ctx.restore()
-                
-
-            }
-            for (let i = 0; i < mob.build.guns.length; i++) {
-                const gun = mob.build.guns[i];
-                ctx.strokeStyle = "#000"
-                renderBarrel(gun.pos, 0.4*(gun.width/10),0.85*(gun.height/17))
-            }
-
-            ctx.beginPath()
-            ctx.arc(mob.pos[0],mob.pos[1], mob.build.size*(0.2/15), 0, Math.PI*2)
-
-            ctx.lineWidth = 3/scale
-
-            ctx.fillStyle = mob.team
-            ctx.strokeStyle = pSBC(-0.4, mob.team)
-
-            ctx.fill()
-            ctx.stroke()
-            ctx.closePath()
-                
-            
-            ctx.restore()
 
 
-            let barWidth = 20/scale,
-                barHeight = ((0.7)+1) * mob.build.size*(0.2/15),
-                barThickness = 5
+                let barWidth = 20/scale,
+                    barHeight = ((0.7)+1) * mob.build.size*(0.2/15),
+                    barThickness = 5
 
-            function li(width) {
-                ctx.beginPath()
-                ctx.moveTo(startPos.x-barWidth,startPos.y-barHeight)
-                ctx.lineTo(startPos.x+barWidth-((1-width)*barWidth*2),startPos.y-barHeight)
-                ctx.stroke()
-                ctx.closePath()
-            }
+                function li(width) {
+                    ctx.beginPath()
+                    ctx.moveTo(startPos.x-barWidth,startPos.y-barHeight)
+                    ctx.lineTo(startPos.x+barWidth-((1-width)*barWidth*2),startPos.y-barHeight)
+                    ctx.stroke()
+                    ctx.closePath()
+                }
 
-            if (!mob.bullet) {
-                ctx.lineCap = "round"
+                if (!mob.bullet) {
+                    ctx.lineCap = "round"
 
-                ctx.strokeStyle = "#777"
-                ctx.lineWidth = (barThickness*1.4)/scale
-                li(1)
+                    ctx.strokeStyle = "#777"
+                    ctx.lineWidth = (barThickness*1.4)/scale
+                    li(1)
 
-                ctx.strokeStyle = "#0f0"
-                ctx.lineWidth = (barThickness)/scale
-                li(Math.min(Math.max(mob.health,0),1))
+                    ctx.strokeStyle = "#0f0"
+                    ctx.lineWidth = (barThickness)/scale
+                    li(Math.min(Math.max(mob.health,0),1))
+                }
             }
     
             
