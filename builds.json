@@ -38,7 +38,7 @@
         "name": "starter"
     },
     "sniper": {
-        "speed": 0.7,
+        "speed": 0.9,
         "size": 13,
         "maxHealth": 75,
         "bodyDamage": 1.9,

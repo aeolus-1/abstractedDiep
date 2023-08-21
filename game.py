@@ -22,7 +22,7 @@ class Game:
 
         if True:
             botMob = self.addMobile({
-                "pos":[-3,5],
+                "pos":[15,5],
                 "radius":0.25,
                 "build":self.BUILDS["starter"],
 
