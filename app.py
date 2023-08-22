@@ -12,6 +12,12 @@ sio.attach(app)
 
 adminCode = open('admincode.txt').read()
 
+global serverTps
+serverTps = 0
+
+
+TIMEOUT_DURATION = (30)  *1000
+
 
 @sio.on('connect')
 def connect(sid, environ):
@@ -21,8 +27,10 @@ def connect(sid, environ):
 async def join(sid, environ):
     newClient = {
         "id":sid,
-        "mobile":mainGame.addClientPlayer(sid)
+        "mobile":mainGame.addClientPlayer(sid, environ),
+        "timeout":(time.time()*1000),
     }
+    
     clients[sid] = newClient
 
     print("Player has Joined")
@@ -31,13 +39,19 @@ async def join(sid, environ):
         "mobId":newClient["mobile"].id,
         "sid":sid,
     }, to=sid)
-
+    
+@sio.on('requestTps')
+async def message(sid, data):
+    clientOb = clients.get(sid)
+    if (clientOb):
+        await sio.emit("returnTps", serverTps, to=sid)
 
 @sio.on('requestState')
 async def message(sid, data):
     clientOb = clients.get(sid)
     if (clientOb):
-        await sio.emit("returnState", mainGame.getStateForClients(sid), to=sid)
+        #print(sio.sendBuffer)
+        await sio.emit("returnState", mainGame.getStateForClients(sid), to=sid, ignore_queue=True)
     else:
         pass#print("Non-joined player requesting")
     # await asyncio.sleep(1 * random.random())
@@ -46,6 +60,9 @@ async def message(sid, data):
 @sio.on('disconnect')
 def disconnect(sid):
     print('disconnect ', sid)
+    mainGame.killMobile(clients[sid]["mobile"])
+    clients[sid]["mobile"].duration = 0
+    #clients[sid]["mobile"].bot = True
 
 @sio.on('runCommand')
 async def runCommand(sid, data):
@@ -64,6 +81,7 @@ async def runCommand(sid, data):
 
 @sio.on('submitKeys')
 def submitKeys(sid, data):
+    clients[sid]["timeout"] = time.time()*1000
     mainGame.fetchMobile(data["mobId"]).keys = data["keys"]
     if (data["keys"].get("rotation")):
         mainGame.fetchMobile(data["mobId"]).rotation = data["keys"]["rotation"]
@@ -77,13 +95,30 @@ mainGame.clients = clients
 #        self.updatePlayerControls(delta)
 
 def updateClientsGameState():
+    global serverTps
     preTime = time.time()
     while True:
-        tps = 1000/(((time.time()-preTime)*1000)+0.001)
+        serverTps = 1000/(((time.time()-preTime)*1000)+0.001)
         #print(tps)
         preTime = time.time()
         #print("emitting", time.time())
-        mainGame.updateState(1/tps)
+        mainGame.updateState(1/serverTps)
+
+        deletions = []
+        for client in clients:
+            clientDict = clients[client]
+            lastInteraction = (time.time()*1000)-clientDict["timeout"]
+            if (lastInteraction>TIMEOUT_DURATION):
+                print("disconnected mobile "+client+" for inactivity")
+                mainGame.killMobile(clients[client]["mobile"])
+                clients[client]["mobile"].duration = 0
+                deletions.append(client)
+        for i in deletions:
+            del clients[i]
+                
+
+
+
         time.sleep(1/30)
 
 stateUpdater = threading.Thread(target=updateClientsGameState, args=())

@@ -52,7 +52,7 @@ def runBot(self, bot, delta, movement=[0,0]):
     
 
     def makeMove(pos, dir=1):
-        moveVM = 8 * bot.build["speed"] * dir
+        moveVM = self.getMobileSpeed(bot) * dir
         moveVA = math.atan2(pos[1]-bot.pos[1],pos[0]-bot.pos[0])
         
         moveV = [
@@ -68,9 +68,9 @@ def runBot(self, bot, delta, movement=[0,0]):
 
 
     def findPlayers(a):
-        return (a.player or a.bot) and a.id!=bot.id
+        return (a.player or a.bot) and a.id!=bot.id and a.shotBy!=bot.shotBy
     def findVisiblePlayers(a):
-        return math.sqrt(math.pow(a.pos[0]-bot.pos[0],2)+math.pow(a.pos[1]-bot.pos[1],2)) < bot.build["sight"]*(10/600)
+        return math.sqrt(math.pow(a.pos[0]-bot.pos[0],2)+math.pow(a.pos[1]-bot.pos[1],2)) < bot.build["sight"]*(10/600) and a.invis>0.1
     def sortPlayers(a):
         return math.sqrt(math.pow(a.pos[0]-bot.pos[0],2)+math.pow(a.pos[1]-bot.pos[1],2))
 
@@ -92,9 +92,11 @@ def runBot(self, bot, delta, movement=[0,0]):
 
         dst = math.sqrt(math.pow(target.pos[0]-bot.pos[0],2)+math.pow(target.pos[1]-bot.pos[1],2))
 
-        if bot.health > 0.4:
-            if (dst>2):
+        if target.health-bot.health < 0.6:
+            if (dst>bot.build["range"]*(10/600)):
                 makeMove(target.pos)
+            elif (dst<bot.build["range"]*(10/600)*0.85):
+                makeMove(target.pos, -1)
         else:
             if (dst<8):
                 makeMove(target.pos, -1)
@@ -167,19 +169,27 @@ def runBot(self, bot, delta, movement=[0,0]):
             
         
 
-        
-    if bot.build["healer"]:
-        if len(nearbyFriendlies)>0:
-            if runHealFriend():
-                if len(nearbyEnemies)>0:
-                    runAttackEnemy()
-        elif len(nearbyEnemies)>0:
-            runAttackEnemy()
-        else:
-            pass
+    if bot.build.get("tracking"):
+        if (len(nearbyFriendlies)>0):
+
+            target = nearbyFriendlies[0]
+            angle = math.atan2(target.pos[1]-bot.pos[1],target.pos[0]-bot.pos[0])
+
+            bot.vel[0] += math.cos(angle)*delta*10
+            bot.vel[1] += math.sin(angle)*delta*10
     else:
-        if len(nearbyEnemies)>0:
-            runAttackEnemy()
+        if bot.build["healer"]:
+            if len(nearbyFriendlies)>0:
+                if runHealFriend():
+                    if len(nearbyEnemies)>0:
+                        runAttackEnemy()
+            elif len(nearbyEnemies)>0:
+                runAttackEnemy()
+            else:
+                pass
+        else:
+            if len(nearbyEnemies)>0:
+                runAttackEnemy()
         
     
     

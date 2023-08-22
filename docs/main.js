@@ -96,7 +96,7 @@ function renderLoop() {
         drawGrid(0.3)
 
 
-
+        renderParticles(delta)
 
 
 
@@ -105,6 +105,22 @@ function renderLoop() {
         for (let i = 0; i < totalMobiles.length; i++) {
             const mob = totalMobiles[i];
             let dst = Math.sqrt(Math.pow(mob.pos[0]-cameraPos[0],2)+Math.pow(mob.pos[1]-cameraPos[1],2))
+
+            if (!mob.bullet) {
+                let currentEffects = Object.keys(mob.effects)
+                for (let i = 0; i < currentEffects.length; i++) {
+                    const effect = mob.effects[currentEffects[i]]
+                    console.log("spawing")
+                    if (Math.random()>0.8) spawnSparseParticle({x:mob.pos[0],y:mob.pos[1]},mob.build.size*(0.2/15)*2.5,{
+                        color:effect.color,
+                        duration:0.5,
+                        size:((Math.random()*4)+8)*0.01
+                    })
+                }
+            }
+            
+            
+
             if (dst < cameraRange*(10/600)) {
                     
 
@@ -112,8 +128,10 @@ function renderLoop() {
                     mob.pos[0] += mob.vel[0]*delta
                     mob.pos[1] += mob.vel[1]*delta
                 }
-
+                ctx.globalAlpha = 1
+                ctx.globalAlpha = Math.max(mob.opacity*mob.invis,mob.team==window.myTeam?0.3:0)
                 ctx.save()
+                
 
                 let startPos = {x:mob.pos[0],y:mob.pos[1]},
                     rotation = mob.rotation
@@ -214,7 +232,7 @@ function renderLoop() {
                 
                 ctx.restore()
 
-
+                ctx.globalAlpha *= 0.5
                 let barWidth = 20/scale,
                     barHeight = ((0.7)+1) * mob.build.size*(0.2/15),
                     barThickness = 5
@@ -255,16 +273,29 @@ function renderLoop() {
         
         ctx.restore()
     }
+
+    ctx.font = "Arial 40px"
+    ctx.fillStyle = "#000"
+    ctx.fillText("Server Tps: "+Math.round(window.serverTps), 10,10)
+    ctx.fillText("Ping: "+Math.round(window.serverPing), 10,20)
     deltaTime = (new Date()).getTime()
     requestAnimationFrame(renderLoop)
 }
+
+var lastInteracted = (new Date()).getTime()
 
 function updateServerKeys(){
     if (socket) if (socket.connected) socket.emit("submitKeys", {
         keys:keys,
         mobId:MOBILE_ID,
     })
+    lastInteracted = (new Date()).getTime()
 }
+setInterval(() => {
+    if ((new Date()).getTime-lastInteracted>30000){
+        alert("likely disconnected due to inactivity\ni'm not 100% sure")
+    }
+}, 15);
 
 var keys = {}
 document.addEventListener("keydown",(e)=>{keys[e.code]=true;updateServerKeys()})

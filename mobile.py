@@ -26,13 +26,18 @@ class Mobile:
 
         self.build = options["build"]
         
-        self.build["maxHealth"] = max(self.build["maxHealth"]*0.5, 0.1)
+        #self.build["maxHealth"] = max(self.build["maxHealth"]*0.5, 0.1)
 
         self.team = options["team"]
+        self.opacity = 1
+        self.invis = 1
+
+        self.effects = {}
 
         self.rotation = 0
 
         self.duration = 99999999999
+        self.delete = False
 
     
 

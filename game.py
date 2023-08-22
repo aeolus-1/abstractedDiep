@@ -1,7 +1,7 @@
 from mobile import Mobile
 from chunks import Chunks
 from bot import runBot
-import math, json, random, copy
+import math, json, random, copy, time
 
 from mobile import *
 
@@ -15,27 +15,21 @@ class Game:
             "players":[],
         }
         self.BUILDS = json.load(open('builds.json'))
+        self.EFFECTS = json.load(open('effects.json'))
 
         self.chunks = Chunks({
             "chunkSize":[0.5,0.5],
         })
 
         if True:
-            botMob = self.addMobile({
-                "pos":[15,5],
-                "radius":0.25,
-                "build":self.BUILDS["starter"],
-
-                "team":"#0f0",
-            })
             
-            botMob.bot = True
+            
             #botMob.bot = True
-            for x in range(0):
+            for x in range(1):
                 botMob = self.addMobile({
                     "pos":[5,random.random()],
                     "radius":0.25,
-                    "build":self.BUILDS["healer"],
+                    "build":self.BUILDS["spread"],
 
                     "team":"#f00",
                 })
@@ -54,6 +48,8 @@ class Game:
         })
         
         botMob.bot = True
+    def setBuild(self, mob, buildname):
+        mob.build = copy.deepcopy(self.BUILDS[buildname])
 
     def fetchMobile(self, id):
         def filterC(a):
@@ -71,9 +67,13 @@ class Game:
             "players":[],
             "cameraPos":[0,0],
             "sight":100,
+            "team":"#000",
+
+            "timestamp":time.time()*1000
         }
         state["cameraPos"] = self.clients[sid]["mobile"].pos
         state["sight"] = self.clients[sid]["mobile"].build["sight"]
+        state["team"] = self.clients[sid]["mobile"].team
         totMobiles = self.chunks.getAllMobiles()
 
         for mob in totMobiles:
@@ -97,9 +97,9 @@ class Game:
 
         return newMob
 
-    def addPlayer(self, build):
+    def addPlayer(self, build, team="#f00"):
         build = copy.deepcopy(self.BUILDS[build])
-        newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build,"team":"#f00"})
+        newMob = Player({"pos":[random.random(),0],"radius":build["size"]*(0.2/15),"build":build,"team":team})
         
         self.chunks.evaluateMob(newMob)
         self.gameState["mobiles"].append(newMob)
@@ -107,8 +107,10 @@ class Game:
 
         return newMob
 
-    def addClientPlayer(self, clientId):
-        mob = self.addPlayer("pellet")
+    def addClientPlayer(self, clientId, data):
+        if self.BUILDS.get(data["class"])==None:
+            data["class"] = "starter"
+        mob = self.addPlayer(data["class"], team=data["team"])
         mob.clientId = clientId
 
         return mob
@@ -121,9 +123,11 @@ class Game:
             ])
             mob.health = 1
         else:
+            if (mob.build.get("explodes")):
+                self.explode(mob, mob.build["explodes"])
             mob.duration = 0
-            self.chunks.evaluateMob(mob)
-            self.deleteMobile(mob)
+            #self.chunks.evaluateMob(mob)
+            #self.deleteMobile(mob)
 
     def deleteMobile(self,mob):
         if mob in self.gameState["mobiles"]:
@@ -137,7 +141,7 @@ class Game:
                 self.chunks.getSurroundingChunks(mobile1.chunkPos)
             )
             for mobile2 in nearbyMobiles:
-                if (mobile1.id!=mobile2.id):
+                if (mobile1.id!=mobile2.id and mobile2.duration>0):
                     dst = math.sqrt(math.pow(mobile1.pos[0]-mobile2.pos[0],2)+math.pow(mobile1.pos[1]-mobile2.pos[1],2))
                     totalRad = (mobile1.build["size"]*(0.2/15))+(mobile2.build["size"]*(0.2/15))
                     if (dst<totalRad):
@@ -165,6 +169,12 @@ class Game:
                                 mobile1.health = max(min(((mobile1.health*mobile1.build["maxHealth"]
                                 )-(damage*delta*mod)
                                 )/mobile1.build["maxHealth"],1),0)
+
+                                if (mobile2.build.get("bodyEffects")):
+                                    for effect in mobile2.build["bodyEffects"]:
+                                        mobile1.effects[effect] = copy.deepcopy(self.EFFECTS[effect])
+                                        
+                                
 
 
                                 if (mobile1.health<=0):
@@ -202,7 +212,7 @@ class Game:
             moveVD = math.sqrt(math.pow(moveV[0],2)+math.pow(moveV[1],2))!=0
 
             moveVA = math.atan2(moveV[0],moveV[1])
-            moveVM = 8 * (1 if moveVD else 0) * player.build["speed"]
+            moveVM = (1 if moveVD else 0) * self.getMobileSpeed(player)
             moveV = [
                 math.cos(moveVA)*moveVM,
                 math.sin(moveVA)*moveVM
@@ -233,24 +243,57 @@ class Game:
 
         for mob in self.gameState["mobiles"]:
             mob.duration -= delta
-            if (mob.duration<=0):
+            if (mob.opacity<=0):
+                mob.delete = True
+                if (mob.build.get("explodes")):
+                    self.explode(mob, mob.build["explodes"])
+                self.deleteMobile(mob)
+            if (mob.delete):
                 self.deleteMobile(mob)
                 continue
 
-            if (mob.bot):
+            self.setMobilePosition(mob, [
+                mob.vel[0]*delta,
+                mob.vel[1]*delta,
+            ], add=True)
+            if (mob.duration<=0):
+                mob.opacity -= delta * (4.5/1)
+                continue
+
+            velDst = math.sqrt(math.pow(mob.vel[0],2)+math.pow(mob.vel[1],2))
+            if mob.build.get("invisible"):
+                if (velDst>1):
+                    mob.invis = mob.build.get("invisible")
+                else:
+                    mob.invis -= delta
+            
+            deletions = []
+            for effName in mob.effects:
+                effect = mob.effects[effName]
+                effect["duration"] = max(effect["duration"]-delta,0)
+                if (effect["duration"]<=0):
+                    deletions.append(effName)
+                    continue
+
+                if effect.get("health"):
+                    mob.health += effect["health"]*delta
+
+            for i in deletions:
+                del mob.effects[i]
+
+
+            if (mob.bot or mob.build.get("tracking")):
                 runBot(self, mob, delta)
             if (mob.autoShoot):
                 self.shoot(mob, delta)
+            
 
             for gun in mob.build["guns"]:
                 gun["shootCooldown"] = max(gun["shootCooldown"]-delta,-gun["startDelay"])
 
             
 
-            self.setMobilePosition(mob, [
-                mob.vel[0]*delta,
-                mob.vel[1]*delta,
-            ], add=True)
+            
             
 
 
@@ -293,8 +336,8 @@ class Game:
 
                 bulletSpeed = bulletBuild["speed"]*(6/8)
                 bulletMob.vel = [
-                    mob.vel[0]+(math.cos(shootAngle)*bulletSpeed),
-                    mob.vel[1]+(math.sin(shootAngle)*bulletSpeed)
+                    (math.cos(shootAngle)*bulletSpeed),
+                    (math.sin(shootAngle)*bulletSpeed)
                 ]
 
 
@@ -308,6 +351,7 @@ class Game:
                 bulletMob.bullet = True
 
                 recoilStrength = (gun["recoilMod"]*(30/50)) * math.pow(bulletBuild["size"]/15,2)
+                
                 mob.vel = [
                     mob.vel[0]-(math.cos(posAngle)*recoilStrength),
                     mob.vel[1]-(math.sin(posAngle)*recoilStrength)
@@ -316,5 +360,48 @@ class Game:
                 #print(bulletMob.options)
                 #print("shot")
 
-    def explode(self):
-        pass
+    def getMobileSpeed(self,mob):
+        totSpeed = 1
+        for effect in mob.effects:
+            effect = mob.effects[effect]
+            if effect.get("slow"):
+                totSpeed *= effect["slow"]
+            if effect.get("speed"):
+                totSpeed *= effect["speed"]
+
+        return mob.build["speed"] * 8 * totSpeed
+
+    def explode(self, mob, explo):
+        if not hasattr(mob,"exploded"):
+            mob.exploded = True
+            for angleN in range(explo["num"]):
+                angle = ((angleN/explo["num"])*math.pi*2)
+
+                bulletBuild = explo["bullet"]["build"]
+
+                bulletMob = self.addMobile({
+                    "radius":bulletBuild["size"]*(0.2/15),
+                    "pos":copy.deepcopy(mob.pos),
+                    "build":bulletBuild,
+
+                    "team":mob.team,
+                })
+
+                
+                shootAngle = angle#+ spreadRand
+
+                bulletSpeed = bulletBuild["speed"]*(6/8)
+                bulletMob.vel = [
+                    (math.cos(shootAngle)*bulletSpeed),
+                    (math.sin(shootAngle)*bulletSpeed)
+                ]
+
+
+            
+                bulletMob.autoShoot = explo["bullet"].get("autoShoot")
+                bulletMob.rotation = shootAngle
+                bulletMob.friction = 1
+                bulletMob.duration = bulletBuild["duration"]/100
+
+                bulletMob.shotBy = mob.shotBy
+                bulletMob.bullet = True

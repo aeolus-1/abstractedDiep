@@ -1,0 +1,19 @@
+{
+    "poison":{
+        "friendly":false,
+        "health":-0.04,
+        "duration":8,
+
+        "color":"#050"
+
+    },
+    "slow":{
+        "friendly":false,
+        "slow":0.7,
+        "duration":3,
+
+        "color":"#008"
+
+    }
+
+}
