@@ -102,7 +102,7 @@
 
         function requestState() {
             socket.volatile.emit("requestState", "hi")
-            setTimeout(requestState, (1000/20) * (20/window.serverTps))
+            setTimeout(requestState, (1000/35) * (20/window.serverTps))
         }
         
         document.body.onload = ()=>{

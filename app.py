@@ -6,8 +6,8 @@ import threading
 
 from game import Game
 
-
-sio = socketio.Server(app, async_mode='threading', cors_allowed_origins='*',  async_handlers=True)
+queue = asyncio.Queue()  # create queue object
+sio = socketio.AsyncServer(async_mode='aiohttp', enable_async=True, cors_allowed_origins='*',  async_handlers=True)
 app = web.Application()
 sio.attach(app)
 
@@ -25,7 +25,7 @@ def connect(sid, environ):
     print("connected: ", sid)
 
 @sio.on('join')
-def join(sid, environ):
+async def join(sid, environ):
     newClient = {
         "id":sid,
         "mobile":mainGame.addClientPlayer(sid, environ),
@@ -36,23 +36,23 @@ def join(sid, environ):
 
     print("Player has Joined")
 
-    sio.emit("joined", {
+    await sio.emit("joined", {
         "mobId":newClient["mobile"].id,
         "sid":sid,
     }, to=sid)
     
 @sio.on('requestTps')
-def message(sid, data):
+async def message(sid, data):
     clientOb = clients.get(sid)
     if (clientOb):
         await sio.emit("returnTps", serverTps, to=sid, ignore_queue=True)
 
 @sio.on('requestState')
-def message(sid, data):
+async def message(sid, data):
     clientOb = clients.get(sid)
     if (clientOb):
         #print(sio.sendBuffer)
-        sio.emit("returnState", mainGame.getStateForClients(sid), to=sid, ignore_queue=True)
+        await sio.emit("returnState", mainGame.getStateForClients(sid), to=sid, ignore_queue=True)
     else:
         await sio.emit("returnState", mainGame.getStateForSpectator(), to=sid, ignore_queue=True)
     # await asyncio.sleep(1 * random.random())
@@ -68,7 +68,7 @@ def disconnect(sid):
     #clients[sid]["mobile"].bot = True
 
 @sio.on('runCommand')
-def runCommand(sid, data):
+async def runCommand(sid, data):
     realCode = data["passcode"]
     if (realCode==adminCode):
         print("allowed Admin")
@@ -77,7 +77,7 @@ def runCommand(sid, data):
         print("WARNING WARNING HACKER HACKER - kicking")
         print("pass tried: ", data["passcode"])
         print("code tried: ", data["code"])
-        sio.disconnect(sid)
+        await sio.disconnect(sid)
 
 
 
