@@ -1,4 +1,4 @@
-import math, random
+import math, random, time
 
 class Mobile:
     def __init__(self, options):
@@ -7,6 +7,7 @@ class Mobile:
         self.player = False
         self.bot = False
         self.bullet = False
+        self.poly = False
 
         self.shotBy = self
 
@@ -34,10 +35,19 @@ class Mobile:
 
         self.effects = {}
 
+        self.drones = []
+
         self.rotation = 0
+        self.target = [0,0]
+
+        self.regenerationTime = 8
+        self.lastDamaged = (time.time())
 
         self.duration = 99999999999
         self.delete = False
+
+        self.xp = 0 
+        self.username = f"unnamed{random.randrange(0,99)}"
 
     
 
