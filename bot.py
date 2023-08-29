@@ -1,4 +1,4 @@
-import math
+import math, time
 
 def intercept(src, dst, v):
     tx = dst['x'] - src['x']
@@ -64,8 +64,13 @@ def runBot(self, bot, delta, movement=[0,0]):
         bot.vel[1] += moveV[1]*delta
 
     def setLookAt(pos):
-        bot.rotation = math.atan2(pos[1]-bot.pos[1],pos[0]-bot.pos[0])
+        bot.target = [
+            -bot.pos[0]+pos[0],
+            -bot.pos[1]+pos[1]
+        ]
 
+    def findPolys(a):
+        return a.poly
 
     def findPlayers(a):
         return (a.player or a.bot) and a.id!=bot.id and a.shotBy!=bot.shotBy
@@ -77,6 +82,8 @@ def runBot(self, bot, delta, movement=[0,0]):
     totalPlayers = list(filter(findPlayers, self.gameState["mobiles"]))    
     visiblePlayers = list(filter(findVisiblePlayers, totalPlayers))    
     nearbyPlayers = list(sorted(visiblePlayers,key=sortPlayers))
+
+    nearbyPolys = list(sorted(list(filter(findPolys, self.gameState["mobiles"])),key=sortPlayers))
 
     nearbyEnemies = []
     nearbyFriendlies = []
@@ -166,30 +173,70 @@ def runBot(self, bot, delta, movement=[0,0]):
             return False
         else:
             return True
+
+    def minePolys():
+        target = nearbyPolys[0]
+
+        dst = math.sqrt(math.pow(target.pos[0]-bot.pos[0],2)+math.pow(target.pos[1]-bot.pos[1],2))
+        
+        setLookAt(target.pos)
+
+        if (bot.health<0.2) or (bot.health<0.9 and ((time.time())-bot.lastDamaged>bot.regenerationTime)):
+            return 0
+
+        if (dst>bot.build["range"]*(10/600)):
+            makeMove(target.pos)
+        if (dst<bot.build["range"]*(10/600)*1.5):
+            self.shoot(bot, delta)
+        
             
         
+    
+            
+    def moveTowardCentre():
+        makeMove([(self.gameBounds[0]*0.5)-5,(self.gameBounds[1]*0.5)-5])
 
-    if bot.build.get("tracking"):
-        if (len(nearbyFriendlies)>0):
+    if bot.build.get("drone"):
+        target = [(bot.shotBy.target[0]+bot.shotBy.pos[0]),(bot.shotBy.target[1]+bot.shotBy.pos[1])]
+        angle = math.atan2(target[1]-bot.pos[1],target[0]-bot.pos[0])
+        #self.setMobilePosition(bot, target)
 
-            target = nearbyFriendlies[0]
-            angle = math.atan2(target.pos[1]-bot.pos[1],target.pos[0]-bot.pos[0])
+        setLookAt([
+            target[0],
+            target[1],
+        ])
 
-            bot.vel[0] += math.cos(angle)*delta*10
-            bot.vel[1] += math.sin(angle)*delta*10
+        bot.vel[0] += math.cos(angle)*delta*10
+        bot.vel[1] += math.sin(angle)*delta*10
     else:
-        if bot.build["healer"]:
-            if len(nearbyFriendlies)>0:
-                if runHealFriend():
-                    if len(nearbyEnemies)>0:
-                        runAttackEnemy()
-            elif len(nearbyEnemies)>0:
-                runAttackEnemy()
-            else:
-                pass
+        if bot.build.get("tracking"):
+            if (len(nearbyFriendlies)>0):
+
+                target = nearbyFriendlies[0]
+                angle = math.atan2(target.pos[1]-bot.pos[1],target.pos[0]-bot.pos[0])
+
+                bot.vel[0] += math.cos(angle)*delta*10
+                bot.vel[1] += math.sin(angle)*delta*10
         else:
-            if len(nearbyEnemies)>0:
-                runAttackEnemy()
+            if bot.build["healer"]:
+                if len(nearbyFriendlies)>0:
+                    if runHealFriend():
+                        if len(nearbyEnemies)>0:
+                            runAttackEnemy()
+                        else:
+                            moveTowardCentre()
+                elif len(nearbyEnemies)>0:
+                    runAttackEnemy()
+                else:
+                    moveTowardCentre
+            else:
+                if len(nearbyEnemies)>0:
+                    runAttackEnemy()
+                else:
+                    if len(nearbyPolys)>0:
+                        minePolys()
+                    else:
+                        moveTowardCentre()
         
     
     

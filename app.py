@@ -17,7 +17,7 @@ global serverTps
 serverTps = 0
 
 
-TIMEOUT_DURATION = (30)  *1000
+TIMEOUT_DURATION = (60)  *1000
 
 
 @sio.on('connect')
@@ -45,7 +45,7 @@ def join(sid, environ):
 def message(sid, data):
     clientOb = clients.get(sid)
     if (clientOb):
-        await sio.emit("returnTps", serverTps, to=sid)
+        await sio.emit("returnTps", serverTps, to=sid, ignore_queue=True)
 
 @sio.on('requestState')
 def message(sid, data):
@@ -54,15 +54,17 @@ def message(sid, data):
         #print(sio.sendBuffer)
         sio.emit("returnState", mainGame.getStateForClients(sid), to=sid, ignore_queue=True)
     else:
-        pass#print("Non-joined player requesting")
+        await sio.emit("returnState", mainGame.getStateForSpectator(), to=sid, ignore_queue=True)
     # await asyncio.sleep(1 * random.random())
     # print('waited', data)
 
 @sio.on('disconnect')
 def disconnect(sid):
     print('disconnect ', sid)
-    mainGame.killMobile(clients[sid]["mobile"])
-    clients[sid]["mobile"].duration = 0
+    if (clients.get(sid)):
+        clients[sid]["mobile"].disconnected = True
+        mainGame.killMobile(clients[sid]["mobile"])
+        clients[sid]["mobile"].duration = 0
     #clients[sid]["mobile"].bot = True
 
 @sio.on('runCommand')
@@ -82,10 +84,11 @@ def runCommand(sid, data):
 
 @sio.on('submitKeys')
 def submitKeys(sid, data):
-    clients[sid]["timeout"] = time.time()*1000
+    if clients.get(sid):
+        clients[sid]["timeout"] = time.time()*1000
     mainGame.fetchMobile(data["mobId"]).keys = data["keys"]
-    if (data["keys"].get("rotation")):
-        mainGame.fetchMobile(data["mobId"]).rotation = data["keys"]["rotation"]
+    if (data["keys"].get("target")):
+        mainGame.fetchMobile(data["mobId"]).target = data["keys"]["target"]
 
 
 clients = {}

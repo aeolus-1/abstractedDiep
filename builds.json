@@ -40,6 +40,52 @@
         ],
         "name": "starter"
     },
+    "drone": {
+        "speed": 0.85,
+        "size": 15,
+        "maxHealth": 100,
+        "bodyDamage": 5,
+        "duration": null,
+        "friction": 0.99,
+        "sight": 600,
+        "range":300,
+        "healer": false,
+        "droneCount":6,
+        "guns": [
+            {
+                "pos": 0,
+                "startDelay":0,
+                "offset":0,
+                "height": 13,
+                "width": 15,
+                "endWidth":20,
+                "speed": 2,
+                "spread": 3,
+                "recoilMod": 1,
+                "bullet": {
+                    "build": {
+                        "speed": 8,
+                        "size": 12,
+                        "maxHealth": 30,
+                        "bodyDamage": 9,
+                        "bonusPolyDamage":2.5,
+                        "duration": 99999,
+                        "friction": 0.03,
+                        "sight": 0,
+                        "guns": [],
+                        "drone":true,
+                        "sides":3
+                    },
+                    "autoSpin": false,
+                    "autoShoot": false,
+                    "bot": false
+                },
+                "shootCooldown":0,
+                "onShootEffects": []
+            }
+        ],
+        "name": "starter"
+    },
     "pellet": {
         "speed": 0.85,
         "size": 15,
@@ -633,7 +679,7 @@
         "speed": 1.1,
         "size": 16,
         "maxHealth": 110,
-        "bodyDamage": 2.1,
+        "bodyDamage": 4,
         "duration": null,
         "friction": 0.99,
         "sight": 450,
@@ -890,55 +936,51 @@
         ],
         "name": "healer"
     },
-    "averageJake": {
-        "speed": 4,
-        "size": 3,
+    
+
+    "cube": {
+        "speed": 0,
+        "size": 13,
         "maxHealth": 20,
-        "bodyDamage": 4,
+        "bodyDamage": 10,
         "duration": null,
         "friction": 0.99,
-        "sight": 1200,
-        "range":0,
+        "sight": 600,
+        "range":300,
         "healer": false,
-        "guns": [
-            
-        ],
-        "explodes":{
-            "num":20,
-            "bullet":{
-                "build": {
-                    "speed": 8,
-                    "size": 8,
-                    "maxHealth": 50,
-                    "bodyDamage": 10,
-                    "duration": 120,
-                    "friction": 1,
-                    "sight": 0,
-                    "guns": [],
-                    "explodes":{
-                        "num":20,
-                        "bullet":{
-                            "build": {
-                                "speed": 8,
-                                "size": 8,
-                                "maxHealth": 50,
-                                "bodyDamage": 10,
-                                "duration": 120,
-                                "friction": 1,
-                                "sight": 0,
-                                "guns": []
-                            },
-                            "autoSpin": false,
-                            "autoShoot": false,
-                            "bot": false
-                        }
-                    }
-                },
-                "autoSpin": false,
-                "autoShoot": false,
-                "bot": false
-            }
-        },
+        "sides":4,
+        "guns":[],
+        "xp":10,
+        "name": "starter"
+    },
+    "triangle": {
+        "speed": 0,
+        "size": 13,
+        "maxHealth": 40,
+        "bodyDamage": 10,
+        "duration": null,
+        "friction": 0.99,
+        "sight": 600,
+        "range":300,
+        "healer": false,
+        "sides":3,
+        "guns":[],
+        "xp":15,
+        "name": "starter"
+    },
+    "pentagon": {
+        "speed": 0,
+        "size": 17,
+        "maxHealth": 60,
+        "bodyDamage": 10,
+        "duration": null,
+        "friction": 0.99,
+        "sight": 600,
+        "range":300,
+        "healer": false,
+        "sides":5,
+        "guns":[],
+        "xp":60,
         "name": "starter"
     }
 }

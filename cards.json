@@ -1,0 +1,10 @@
+{
+    "healthIncrease":{
+        "des":"Increase Max HP by 20%",
+
+        "health":1.2
+    },
+    "forwardGun":{
+
+    }
+}
