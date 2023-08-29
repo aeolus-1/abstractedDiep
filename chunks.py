@@ -61,8 +61,7 @@ class Chunks:
 
     def getAllMobiles(self):
         retMobiles = []
-        chunkNames = list(self.mainArray.keys())
-        for i in chunkNames:
+        for i in self.mainArray:
             for mob in self.mainArray[i]:
                 retMobiles.append(mob)
         return retMobiles

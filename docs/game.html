@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>thing</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap" rel="stylesheet">
-
     <style>
         body {
             margin: 0%;
@@ -97,12 +93,9 @@
         window.serverTps = 30
         window.serverPing = 0
         window.myTeam = "#000"
-        window.leaderboard = {}
-        window.xp = 0
-
         function requestState() {
             socket.volatile.emit("requestState", "hi")
-            setTimeout(requestState, (1000/20) * (20/window.serverTps))
+            setTimeout(requestState, (1000/30) * (30/window.serverTps))
         }
         
         document.body.onload = ()=>{
@@ -112,12 +105,7 @@
             socket.on("connect", (e)=>{
                 console.log("connected")
 
-                if (!clientData.spectator) {
-                    socket.emit("join", window.clientData)
-                } else {
-                    console.log("I am spectator")
-                    requestState()
-                }
+                socket.emit("join", window.clientData)
                 socket.on("joined", (e)=>{
                     window.CLIENT_ID = e.sid
                     window.MOBILE_ID = e.mobId
@@ -127,7 +115,7 @@
 
                     setInterval(() => {
                         socket.volatile.emit("requestTps", "hi")
-                    }, 1000/5);
+                    }, 1000/10);
                 })
                 
                 
@@ -141,8 +129,6 @@
                 cameraRange = e.sight
                 myTeam = e.team
                 serverPing = (new Date()).getTime()-e.timestamp
-                leaderboard = e.leaderboard
-                window.xp = e.xp
             })
             socket.on("returnTps", (e)=>{
                 window.serverTps = e

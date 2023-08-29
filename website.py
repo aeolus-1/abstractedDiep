@@ -11,8 +11,7 @@ app = socketio.WSGIApp(sio, static_files={
     '/main.js': {'content_type': 'text/javascript', 'filename': 'docs/main.js'},
     '/game': {'content_type': 'text/html', 'filename': 'docs/game.html'},
     '/particles.js': {'content_type': 'text/javascript', 'filename': 'docs/particles.js'},
-    '/jqeruy.js': {'content_type': 'text/javascript', 'filename': 'docs/jqeruy.js'},
-    '/builds.json': {'content_type': 'text/javascript', 'filename': 'builds.json'},
+    
 })
 
 def run():

@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Do it</title>
-    <script src="jqeruy.js"></script>
-
 </head>
 <body>
-    <div id="bin"></div><hr>
     <label for="class">Class: </label><input type="text" name="class" value="starter" id="classPicker">
-    <label for="team">Team: </label><input type="color" name="team" value="#c0c0c0" id="teamPicker"><br>
+    <label for="team">Team: </label><input type="color" name="team" value="#f00" id="teamPicker"><br>
     <button onclick='(function(){
 
         let data = {
@@ -21,17 +18,6 @@
         let metaData = `?team=${data.team}?class=${data.class}`
 
         window.open(((location.protocol=="file:")?"./game.html":location.href+"game")+metaData, "_self")
-    })();return false'>Go</button><br>
-    <a href="./game.html?spectator=true">Spectate Game</a>
-    <script>
-        window.builds = jQuery.getJSON("../builds.json")
-        setTimeout(() => {
-            builds = Object.keys(JSON.parse(builds.responseText))
-            for (let i = 0; i < builds.length; i++) {
-                const bu = builds[i];
-                document.getElementById("bin").innerHTML += bu+"<br>"
-            }
-        }, 100);
-    </script>
+    })();return false'>Go</button>
 </body>
 </html>

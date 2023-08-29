@@ -6,7 +6,8 @@ import threading
 
 from game import Game
 
-sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins='*',  async_handlers=True)
+
+sio = socketio.Server(app, async_mode='threading', cors_allowed_origins='*',  async_handlers=True)
 app = web.Application()
 sio.attach(app)
 
@@ -16,7 +17,7 @@ global serverTps
 serverTps = 0
 
 
-TIMEOUT_DURATION = (60)  *1000
+TIMEOUT_DURATION = (30)  *1000
 
 
 @sio.on('connect')
@@ -24,7 +25,7 @@ def connect(sid, environ):
     print("connected: ", sid)
 
 @sio.on('join')
-async def join(sid, environ):
+def join(sid, environ):
     newClient = {
         "id":sid,
         "mobile":mainGame.addClientPlayer(sid, environ),
@@ -35,39 +36,37 @@ async def join(sid, environ):
 
     print("Player has Joined")
 
-    await sio.emit("joined", {
+    sio.emit("joined", {
         "mobId":newClient["mobile"].id,
         "sid":sid,
     }, to=sid)
     
 @sio.on('requestTps')
-async def message(sid, data):
+def message(sid, data):
     clientOb = clients.get(sid)
     if (clientOb):
-        await sio.emit("returnTps", serverTps, to=sid, ignore_queue=True)
+        await sio.emit("returnTps", serverTps, to=sid)
 
 @sio.on('requestState')
-async def message(sid, data):
+def message(sid, data):
     clientOb = clients.get(sid)
     if (clientOb):
         #print(sio.sendBuffer)
-        await sio.emit("returnState", mainGame.getStateForClients(sid), to=sid, ignore_queue=True)
+        sio.emit("returnState", mainGame.getStateForClients(sid), to=sid, ignore_queue=True)
     else:
-        await sio.emit("returnState", mainGame.getStateForSpectator(), to=sid, ignore_queue=True)
+        pass#print("Non-joined player requesting")
     # await asyncio.sleep(1 * random.random())
     # print('waited', data)
 
 @sio.on('disconnect')
 def disconnect(sid):
     print('disconnect ', sid)
-    if (clients.get(sid)):
-        clients[sid]["mobile"].disconnected = True
-        mainGame.killMobile(clients[sid]["mobile"])
-        clients[sid]["mobile"].duration = 0
+    mainGame.killMobile(clients[sid]["mobile"])
+    clients[sid]["mobile"].duration = 0
     #clients[sid]["mobile"].bot = True
 
 @sio.on('runCommand')
-async def runCommand(sid, data):
+def runCommand(sid, data):
     realCode = data["passcode"]
     if (realCode==adminCode):
         print("allowed Admin")
@@ -76,18 +75,17 @@ async def runCommand(sid, data):
         print("WARNING WARNING HACKER HACKER - kicking")
         print("pass tried: ", data["passcode"])
         print("code tried: ", data["code"])
-        await sio.disconnect(sid)
+        sio.disconnect(sid)
 
 
 
 
 @sio.on('submitKeys')
 def submitKeys(sid, data):
-    if clients.get(sid):
-        clients[sid]["timeout"] = time.time()*1000
+    clients[sid]["timeout"] = time.time()*1000
     mainGame.fetchMobile(data["mobId"]).keys = data["keys"]
-    if (data["keys"].get("target")):
-        mainGame.fetchMobile(data["mobId"]).target = data["keys"]["target"]
+    if (data["keys"].get("rotation")):
+        mainGame.fetchMobile(data["mobId"]).rotation = data["keys"]["rotation"]
 
 
 clients = {}
